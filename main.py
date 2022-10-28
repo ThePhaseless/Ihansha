@@ -1,7 +1,10 @@
+from ast import arg
+from asyncio.windows_events import NULL
 from dataclasses import dataclass
 import argparse
 import os
 import time
+from traceback import print_tb
 import dotenv
 import platform
 import requests
@@ -13,29 +16,27 @@ from selenium.webdriver.edge.options import Options as EdgeOptions
 from selenium.webdriver.edge.service import Service as EdgeService
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
-
 parser = argparse.ArgumentParser(
     prog="main.py", description="Download anime from shinden.pl")
 parser.add_argument("-l", "--link", help="Link to anime from shinden.pl")
 parser.add_argument("-p", "--path", help="Download path")
 parser.add_argument(
-    "-a", "--all", help="Download add episodes", action='store_true')
+    "-a", "--all", help="Download all episodes", action='store_true')
 args = parser.parse_args()
 
 envs = dotenv.load_dotenv("./secrets.env")
-downloadAllE = False
+if os.getenv("LOGIN") == NULL or os.getenv("PASSWORD") == NULL:
+    print("Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
+    exit()
 
 animeLink = args.link or input("Shinden Link: ")
 
 start = 0
 end = 0
 
-if not args.all:
-    start = input("Start episode: ")
-    end = input("End episode: ")
-
 
 def downloadExtention(zipLink):
+    print("Downloading extention...")
     link = requests.get(zipLink)
     file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
@@ -64,10 +65,21 @@ class Episode:
     hostingLinks = []
 
 
+def searchForFiles(seriesName):
+    existingFiles = {}
+    path = (vars.path or "./Downloads") + "/" + seriesName
+    os.getcwd(path)
+    for file in os.listdir():
+        if "E" in file:
+            existingFiles += {file.replace(".mp4", "").replace("E", "")}
+    print("Found at least " + len(existingFiles) + " files")
+    return existingFiles
+
+
 def download(num, link):
     link.replace("preview", "view")
     ydl_opts = {
-        'outtmpl': (args.path + "/" or '/Statek/Media/tvseries/') + animeName + '/' 'E' + str(num) + '.mp4'
+        'outtmpl': (args.path or 'Downloads') + "/" + animeName + '/' 'E' + str(num) + '.mp4'
     }
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download(link)
@@ -95,19 +107,19 @@ def searchLinks(ep: Episode):
                                                                                               'iframe').get_attribute(
                         "src")
                     if "captcha" in dlLink:
-                        print("xd2")
+                        print("Wrong url, trying another mirror...")
                         continue
                     break
                 except:
-                    print("xd")
+                    print("Captcha error, trying again")
                     time.sleep(1)
                     continue
-            try:
-                time.sleep(1)
-                download(ep.num, dlLink)
-                break
-            except:
-                print("Download failed, trying next hosting...")
+            # try:
+            time.sleep(1)
+            download(ep.num, dlLink)
+            break
+            # except:
+            #   print("Download failed, trying next hosting...")
 
 
 def emailLogin():
@@ -178,15 +190,6 @@ try:
 except:
     exit()
 
-
-try:
-    page = driver.page_source
-    file_ = open('page.html', 'w')
-    file_.write(page)
-    file_.close()
-except:
-    print()
-
 unavailable = []
 episodes = []
 
@@ -218,17 +221,22 @@ if len(unavailable) > 0:
 if len(episodes) == 0:
     print("No available episodes!")
 else:
+    print("Found " + str(len(episodes)) + " episodes")
     print("Searching for links...")
 
-if args.all:
-    start = 0
-    end = len(episodes)
+if not args.all:
+    start = input("Start episode: ")
+    end = input("End episode: ")
 
 episodes.reverse()
 for episode in episodes:
-    if downloadAllE == False:
+    if args.all:
         if episode.num not in range(int(start), int(end)):
             continue
+        elif episode.num not in searchForFiles(animeName):
+            print("Skipping episode " + episode.num +
+                  " because it's already downloaded")
+
     searchLinks(episode)
 
 driver.quit()
