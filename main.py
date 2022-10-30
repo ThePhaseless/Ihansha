@@ -65,14 +65,17 @@ class Episode:
     hostingLinks = []
 
 
-def searchForFiles(seriesName):
-    existingFiles = {}
-    path = (vars.path or "./Downloads") + "/" + seriesName
-    os.getcwd(path)
+def searchForFiles(path):
+    existingFiles = []
+    path = (args.path or "./Downloads") + "\\" + path
+    try:
+        os.chdir(path)
+    except:
+        return {}
     for file in os.listdir():
-        if "E" in file:
-            existingFiles += {file.replace(".mp4", "").replace("E", "")}
-    print("Found at least " + len(existingFiles) + " files")
+        if "E" in file and ".mp4" in file:
+            existingFiles += [int(file.replace(".mp4", "").replace("E", ""))]
+    print("Found " + str(len(existingFiles)) + " downloaded episodes")
     return existingFiles
 
 
@@ -222,20 +225,24 @@ if len(episodes) == 0:
     print("No available episodes!")
 else:
     print("Found " + str(len(episodes)) + " episodes")
+    end = len(episodes)
     print("Searching for links...")
 
 if not args.all:
     start = input("Start episode: ")
     end = input("End episode: ")
 
+skipEpisodes = searchForFiles(animeName)
+
 episodes.reverse()
 for episode in episodes:
     if args.all:
         if episode.num not in range(int(start), int(end)):
             continue
-        elif episode.num not in searchForFiles(animeName):
-            print("Skipping episode " + episode.num +
+        elif episode.num in skipEpisodes:
+            print("Skipping episode " + str(episode.num) +
                   " because it's already downloaded")
+            continue
 
     searchLinks(episode)
 
