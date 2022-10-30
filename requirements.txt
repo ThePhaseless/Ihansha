@@ -4,4 +4,3 @@ selenium
 dataclasses
 webdriver_manager
 get-gecko-driver
-requirements

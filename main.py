@@ -1,10 +1,7 @@
-from ast import arg
-from asyncio.windows_events import NULL
 from dataclasses import dataclass
 import argparse
 import os
 import time
-from traceback import print_tb
 import dotenv
 import platform
 import requests
