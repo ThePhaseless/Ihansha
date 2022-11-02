@@ -17,16 +17,15 @@ parser = argparse.ArgumentParser(
     prog="main.py", description="Download anime from shinden.pl")
 parser.add_argument("-l", "--link", help="Link to anime from shinden.pl")
 parser.add_argument("-p", "--path", help="Download path")
+parser.add_argument("-f", "--file", help="File with links to anime")
 parser.add_argument(
     "-a", "--all", help="Download all episodes", action='store_true')
 args = parser.parse_args()
 
 envs = dotenv.load_dotenv("./secrets.env")
-if os.getenv("LOGIN") == NULL or os.getenv("PASSWORD") == NULL:
+if os.getenv("LOGIN") == None or os.getenv("PASSWORD") == None:
     print("Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
     exit()
-
-animeLink = args.link or input("Shinden Link: ")
 
 start = 0
 end = 0
@@ -64,13 +63,13 @@ class Episode:
 
 def searchForFiles(path):
     existingFiles = []
-    path = (args.path or "./Downloads") + "\\" + path
+    tempPath = (args.path or "./Downloads") + "/" + path
     try:
-        os.chdir(path)
+        os.chdir(tempPath)
     except:
         return {}
     for file in os.listdir():
-        if "E" in file and ".mp4" in file:
+        if "E" in file and ".mp4" in file and not "part" in file:
             existingFiles += [int(file.replace(".mp4", "").replace("E", ""))]
     print("Found " + str(len(existingFiles)) + " downloaded episodes")
     return existingFiles
@@ -79,7 +78,7 @@ def searchForFiles(path):
 def download(num, link):
     link.replace("preview", "view")
     ydl_opts = {
-        'outtmpl': (args.path or 'Downloads') + "/" + animeName + '/' 'E' + str(num) + '.mp4'
+        'outtmpl': (args.path or './Downloads') + "/" + animeName + '/' 'E' + str(num) + '.mp4'
     }
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download(link)
@@ -149,6 +148,17 @@ def emailLogin():
         print("Wrong credentials")
 
 
+animeLinks = [args.link]
+
+if args.file == None:
+    if args.link == None:
+        animeLinks += [input("Enter link to the anime: ")]
+else:
+    f = open(args.file, "r")
+    for animeLink in f:
+        animeLinks += [animeLink]
+
+
 options = EdgeOptions()
 options.headless = False
 
@@ -178,70 +188,74 @@ print("Singing in...")
 emailLogin()
 driver.maximize_window()
 
-showLink = animeLink
-if "all-episodes" not in showLink:
-    showLink = showLink + "/all-episodes"
-try:
-    driver.get(showLink)
-    animeName = driver.find_element(By.CLASS_NAME, "title").text
-    WebDriverWait(driver, timeout=5).until(
-        lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
-    print(driver.current_url)
-except:
-    exit()
 
-unavailable = []
-episodes = []
-
-episodesRaw = driver.find_element(
-    By.CLASS_NAME, "list-episode-checkboxes").find_elements(By.TAG_NAME, "tr")
-
-for episode in episodesRaw:
-    listTemp = episode.find_elements(By.XPATH, "./*")
-    temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False,
-                   listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"))
-    if listTemp[2].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check":
-        temp.online = True
-    else:
-        unavailable += [int(listTemp[0].text)]
+for animeLink in animeLinks:
+    showLink = animeLink
+    try:
+        if "all-episodes" not in showLink:
+            showLink = showLink + "/all-episodes"
+    except:
         continue
-    if listTemp[3].find_element(By.TAG_NAME, "span").get_attribute("title") == "Polski":
-        temp.PL = True
+    try:
+        driver.get(showLink)
+        animeName = driver.find_element(By.CLASS_NAME, "title").text
+        WebDriverWait(driver, timeout=5).until(
+            lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
+        print(driver.current_url)
+    except:
+        exit()
+
+    unavailable = []
+    episodes = []
+
+    episodesRaw = driver.find_element(
+        By.CLASS_NAME, "list-episode-checkboxes").find_elements(By.TAG_NAME, "tr")
+
+    for episode in episodesRaw:
+        listTemp = episode.find_elements(By.XPATH, "./*")
+        temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False,
+                       listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"))
+        if listTemp[2].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check":
+            temp.online = True
+        else:
+            unavailable += [int(listTemp[0].text)]
+            continue
+        if listTemp[3].find_element(By.TAG_NAME, "span").get_attribute("title") == "Polski":
+            temp.PL = True
+        else:
+            unavailable += [int(listTemp[0].text)]
+            continue
+        if listTemp[6].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check-square-o":
+            temp.watched = True
+        episodes += [temp]
+
+    if len(unavailable) > 0:
+        print("Episodes not available: ")
+        print(unavailable)
+    if len(episodes) == 0:
+        print("No available episodes!")
     else:
-        unavailable += [int(listTemp[0].text)]
-        continue
-    if listTemp[6].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check-square-o":
-        temp.watched = True
-    episodes += [temp]
+        print("Found " + str(len(episodes)) + " episodes")
+        end = len(episodes)
+        print("Searching for links...")
 
+    if not args.all:
+        start = input("Start episode: ")
+        end = input("End episode: ")
 
-if len(unavailable) > 0:
-    print("Episodes not available: ")
-    print(unavailable)
-if len(episodes) == 0:
-    print("No available episodes!")
-else:
-    print("Found " + str(len(episodes)) + " episodes")
-    end = len(episodes)
-    print("Searching for links...")
+    skipEpisodes = searchForFiles(animeName)
 
-if not args.all:
-    start = input("Start episode: ")
-    end = input("End episode: ")
+    episodes.reverse()
+    for episode in episodes:
+        if args.all:
+            if episode.num not in range(int(start), int(end)):
+                continue
+            elif episode.num in skipEpisodes:
+                print("Skipping episode " + str(episode.num) +
+                      " because it's already downloaded")
+                continue
 
-skipEpisodes = searchForFiles(animeName)
-
-episodes.reverse()
-for episode in episodes:
-    if args.all:
-        if episode.num not in range(int(start), int(end)):
-            continue
-        elif episode.num in skipEpisodes:
-            print("Skipping episode " + str(episode.num) +
-                  " because it's already downloaded")
-            continue
-
-    searchLinks(episode)
+        searchLinks(episode)
 
 driver.quit()
 if platform.system() != 'Windows':
