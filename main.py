@@ -192,6 +192,7 @@ try:
     options.add_argument("--no-sandbox")
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
+    
 
 except:
     install = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (y/n)") == "y"
@@ -204,6 +205,12 @@ except:
         driver = webdriver.Chrome(service=service_object, options=options)
         
 driver.maximize_window()
+#close current tab
+driver.execute_script("window.open('');")
+driver.switch_to.window(driver.window_handles[1])
+driver.close()
+driver.switch_to.window(driver.window_handles[0])
+
 print("Singing in...")
 emailLogin()
 
@@ -280,3 +287,18 @@ for animeLink in animeLinks:
 driver.quit()
 if platform.system() != 'Windows':
     vdisplay.stop()
+
+if install:
+    if input("Do you want to remove Chromium? (y/n)") == "y":
+        if platform.system() == 'Windows':
+            os.system("winget uninstall Hibbiki.Chromium")
+        elif platform.system() == 'Linux':
+            os.system("sudo apt remove chromium -y")
+        else:
+            print("Unsupported OS, please remove manually")
+            exit()
+    else:
+        if platform.system() == 'Windows':
+            print("You can remove it by typing 'winget uninstall Hibbiki.Chromium' in cmd")
+        elif platform.system() == 'Linux':
+            print("You can remove it by typing 'sudo apt remove chromium -y' in terminal")
