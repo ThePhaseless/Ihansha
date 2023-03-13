@@ -36,7 +36,7 @@ def downloadExtention(zipLink):
     link = requests.get(zipLink)
     file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
-    open("UBOL.crx", "wb").write(
+    open("UBOL.zip", "wb").write(
         requests.get(zipLink + file + ".mv3.zip", allow_redirects=True).content)
 
 
@@ -123,9 +123,11 @@ def searchLinks(ep: Episode):
 def installChrome():
     try:
         if platform.system() == 'Windows':
+            print("Installing via winget...")
             directories = os.system("winget install Hibbiki.Chromium")
             print(directories)
         elif platform.system() == 'Linux':
+            print("Installing via apt...")
             directories = os.system("sudo apt install chromium -y")
             print(directories)
         else:
@@ -173,29 +175,26 @@ else:
     for animeLink in f:
         animeLinks += [animeLink]
 
-
-options = ChromeOptions()
-
 if platform.system() != 'Windows':
     from xvfbwrapper import Xvfb
-    options.add_argument("--headless")
     print("Starting virtual display")
     vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
     vdisplay.start()
 
 downloadExtention(
     "https://github.com/gorhill/uBlock/releases/latest/download/")
-options.add_extension("./UBOL.crx")
 
+options = ChromeOptions()
+options.add_extension("./UBOL.zip")
+install: bool = False
 try:
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
     
-
 except:
-    install = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (y/n)") == "y"
+    install = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower != "n"
     if install:
         installChrome();
         print("Chrome/Chromium installed")
@@ -205,12 +204,6 @@ except:
         driver = webdriver.Chrome(service=service_object, options=options)
         
 driver.maximize_window()
-#close current tab
-driver.execute_script("window.open('');")
-driver.switch_to.window(driver.window_handles[1])
-driver.close()
-driver.switch_to.window(driver.window_handles[0])
-
 print("Singing in...")
 emailLogin()
 
@@ -289,7 +282,8 @@ if platform.system() != 'Windows':
     vdisplay.stop()
 
 if install:
-    if input("Do you want to remove Chromium? (y/n)") == "y":
+    uninstall = input("Do you want to remove Chromium? (y/N)")
+    if uninstall.lower == "y":
         if platform.system() == 'Windows':
             os.system("winget uninstall Hibbiki.Chromium")
         elif platform.system() == 'Linux':
