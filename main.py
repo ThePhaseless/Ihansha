@@ -121,6 +121,21 @@ def searchLinks(ep: Episode):
             #   print("Download failed, trying next hosting...")
 
 
+def installChrome():
+    try:
+        if platform.system() == 'Windows':
+            directories = os.system("winget install Hibbiki.Chromium")
+            print(directories)
+        elif platform.system() == 'Linux':
+            directories = os.system("sudo apt install chromium -y")
+            print(directories)
+        else:
+            print("Unsupported OS, please install manually")
+            exit()
+    except:
+        print("Error occured. Please install manually")
+        exit()
+
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
@@ -145,7 +160,8 @@ def emailLogin():
                 break
             print("Wrong credentials")
     except:
-        print("Wrong credentials")
+        driver.save_screenshot('error.png')
+        print("Something went wrong, please check error.png file or browser window")
 
 
 animeLinks = [args.link]
@@ -179,8 +195,15 @@ try:
     driver = webdriver.Chrome(service=service_object, options=options)
 
 except:
-    print("Couldn't open Chrome, make sure to install it before running this script")
-    exit()
+    install = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (y/n)") == "y"
+    if install:
+        installChrome();
+        print("Chrome/Chromium installed")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--no-sandbox")
+        service_object = Service(binary_path)
+        driver = webdriver.Chrome(service=service_object, options=options)
+        
 
 print("Singing in...")
 emailLogin()
@@ -232,6 +255,7 @@ for animeLink in animeLinks:
         print(unavailable)
     if len(episodes) == 0:
         print("No available episodes!")
+        break
     else:
         print("Found " + str(len(episodes)) + " episodes")
         end = len(episodes)
