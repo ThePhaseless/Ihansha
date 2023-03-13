@@ -4,3 +4,4 @@ selenium
 dataclasses
 webdriver_manager
 xvfbwrapper
+chromedriver_py
