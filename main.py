@@ -9,9 +9,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from yt_dlp import YoutubeDL
-from selenium.webdriver.edge.options import Options as EdgeOptions
-from selenium.webdriver.edge.service import Service as EdgeService
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service
+from chromedriver_py import binary_path
 
 parser = argparse.ArgumentParser(
     prog="main.py", description="Download anime from shinden.pl")
@@ -159,13 +159,11 @@ else:
         animeLinks += [animeLink]
 
 
-options = EdgeOptions()
-options.headless = False
+options = ChromeOptions()
 
 if platform.system() != 'Windows':
     from xvfbwrapper import Xvfb
-
-    options.headless = False
+    options.add_argument("--headless")
     print("Starting virtual display")
     vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
     vdisplay.start()
@@ -177,11 +175,11 @@ options.add_extension("./UBOL.zip")
 try:
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
-    driver = webdriver.Edge(service=EdgeService(
-        EdgeChromiumDriverManager().install()), options=options)
+    service_object = Service(binary_path)
+    driver = webdriver.Chrome(service=service_object, options=options)
 
 except:
-    print("Couldn't open Edge, make sure to install it before running this script")
+    print("Couldn't open Chrome, make sure to install it before running this script")
     exit()
 
 print("Singing in...")
