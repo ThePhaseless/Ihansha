@@ -203,10 +203,9 @@ except:
         service_object = Service(binary_path)
         driver = webdriver.Chrome(service=service_object, options=options)
         
-
+driver.maximize_window()
 print("Singing in...")
 emailLogin()
-driver.maximize_window()
 
 
 for animeLink in animeLinks:
