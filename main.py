@@ -36,7 +36,7 @@ def downloadExtention(zipLink):
     link = requests.get(zipLink)
     file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
-    open("UBOL.zip", "wb").write(
+    open("UBOL.crx", "wb").write(
         requests.get(zipLink + file + ".mv3.zip", allow_redirects=True).content)
 
 
@@ -98,7 +98,6 @@ def searchLinks(ep: Episode):
                 button = link.find_element(
                     By.CLASS_NAME, "ep-buttons").find_element(By.TAG_NAME, "a")
                 button.click()
-
                 try:
                     print("Waiting for iframe...")
                     time.sleep(6)
@@ -186,7 +185,7 @@ if platform.system() != 'Windows':
 
 downloadExtention(
     "https://github.com/gorhill/uBlock/releases/latest/download/")
-options.add_extension("./UBOL.zip")
+options.add_extension("./UBOL.crx")
 
 try:
     options.add_argument("--disable-dev-shm-usage")
