@@ -141,12 +141,7 @@ def emailLogin():
     driver.get("https://shinden.pl/main/login")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
     try:
-        WebDriverWait(driver, timeout=3).until(
-            lambda d: d.find_element(By.CLASS_NAME, "details_save--3nDG7"))
-        driver.find_element(By.CLASS_NAME, "details_save--3nDG7").click()
-    except:
-        print()
-    try:
+        #Cookies accept
         WebDriverWait(driver, timeout=3).until(
             lambda d: d.find_element(By.CLASS_NAME, "cb-enable"))
         driver.find_element(By.CLASS_NAME, "cb-enable").click()
