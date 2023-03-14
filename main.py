@@ -15,6 +15,7 @@ from chromedriver_py import binary_path
 
 parser = argparse.ArgumentParser(
     prog="main.py", description="Download anime from shinden.pl")
+parser.add_argument("-s", "--silent", help="Run without opening a browser (only Linux)", action='store_true')
 parser.add_argument("-l", "--link", help="Link to anime from shinden.pl")
 parser.add_argument("-p", "--path", help="Download path")
 parser.add_argument("-f", "--file", help="File with links to anime")
@@ -171,17 +172,33 @@ else:
         animeLinks += [animeLink]
 
 if platform.system() != 'Windows':
-    from xvfbwrapper import Xvfb
-    print("Starting virtual display")
-    vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
-    vdisplay.start()
+    if(os.getenv('DISPLAY') == None):
+        if args.silent or input("No display detected. Do you want to start virtual display? (Y/n)").lower() != "n":
+            try:
+                from xvfbwrapper import Xvfb
+                print("Starting virtual display")
+                vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+                vdisplay.start()
+            except:
+                if input("Couldn't start virtual display. Do you want to install Xvfb? (Y/n)").lower() != "n":
+                    global xvfbInstalled
+                    xbfbInstalled = True
+                    print("Installing via apt...")
+                    directories = os.system("sudo apt -y install xvfb")
+                    print(directories)
+                    from xvfbwrapper import Xvfb
+                    print("Starting virtual display")
+                    vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+                    vdisplay.start()
+                else:
+                    print("Running without virtual display...")
 
 downloadExtention(
     "https://github.com/gorhill/uBlock/releases/latest/download/")
 
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
-install: bool = False
+chromeInstalled: bool = False
 try:
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
@@ -189,8 +206,8 @@ try:
     driver = webdriver.Chrome(service=service_object, options=options)
     
 except:
-    install = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower != "n"
-    if install:
+    chromeInstalled = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower != "n"
+    if chromeInstalled:
         installChrome();
         print("Chrome/Chromium installed")
         options.add_argument("--disable-dev-shm-usage")
@@ -276,9 +293,8 @@ driver.quit()
 if platform.system() != 'Windows':
     vdisplay.stop()
 
-if install:
-    uninstall = input("Do you want to remove Chromium? (y/N)")
-    if uninstall.lower == "y":
+if chromeInstalled:
+    if input("Do you want to remove Chromium? (y/N)").lower == "y":
         if platform.system() == 'Windows':
             os.system("winget uninstall Hibbiki.Chromium")
         elif platform.system() == 'Linux':
@@ -291,3 +307,14 @@ if install:
             print("You can remove it by typing 'winget uninstall Hibbiki.Chromium' in cmd")
         elif platform.system() == 'Linux':
             print("You can remove it by typing 'sudo apt remove chromium -y' in terminal")
+
+if xbfbInstalled:
+    if input("Do you want to remove Xvfb? (y/N)").lower == "y":
+        if platform.system() == 'Linux':
+            os.system("sudo apt remove xvfb -y")
+        else:
+            print("Unsupported OS, please remove manually")
+            exit()
+    else:
+        if platform.system() == 'Linux':
+            print("You can remove it by typing 'sudo apt remove xvfb -y' in terminal")
