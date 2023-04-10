@@ -38,7 +38,7 @@ def downloadExtention(zipLink):
     file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
     open("UBOL.zip", "wb").write(
-        requests.get(zipLink + file + ".mv3.zip", allow_redirects=True).content)
+        requests.get(zipLink + file + ".chromium.mv3.zip", allow_redirects=True).content)
 
 
 @dataclass
