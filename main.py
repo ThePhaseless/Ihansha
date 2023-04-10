@@ -129,7 +129,8 @@ def installChrome():
             print(directories)
         elif platform.system() == 'Linux':
             print("Installing via apt...")
-            directories = os.system("sudo apt install chromium -y")
+            directories = os.system("wget -O - https://raw.githubusercontent.com/scheib/chromium-latest-linux/master/update.sh | bash")
+            System.setProperty("webdriver.chrome.driver", "./latest/chrome");
             print(directories)
         else:
             print("Unsupported OS, please install manually")
