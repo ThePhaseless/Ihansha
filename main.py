@@ -122,6 +122,10 @@ def searchLinks(ep: Episode):
 
 
 def installChrome():
+
+
+
+
     try:
         if platform.system() == 'Windows':
             print("Installing via winget...")
@@ -129,8 +133,9 @@ def installChrome():
             print(directories)
         elif platform.system() == 'Linux':
             print("Installing via apt...")
-            directories = os.system("wget -O - https://raw.githubusercontent.com/scheib/chromium-latest-linux/master/update.sh | bash")
-            System.setProperty("webdriver.chrome.driver", "./latest/chrome");
+            directories = os.system('version=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE")')
+            directories = os.system('wget -qP /tmp/ /"https://chromedriver.storage.googleapis.com/${version}/chromedriver_linux64.zip"')
+            directories = os.system("sudo unzip -o /tmp/chromedriver_linux64.zip -d /usr/bin")
             print(directories)
         else:
             print("Unsupported OS, please install manually")
