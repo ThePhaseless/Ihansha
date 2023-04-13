@@ -167,7 +167,7 @@ def installChrome():
             logging.info(
                 "Installing via script from https://github.com/scheib/chromium-latest-linux...")
             directories = os.system(
-                "wget -O - https://raw.githubusercontent.com/scheib/chromium-latest-linux/master/update.sh | bash")
+                "sudo apt update" + " && " + "sudo apt install chromium chromium-l10n")
             chromeInstalled = True
             logging.info(directories)
         else:
@@ -181,14 +181,13 @@ def installChrome():
 
 def acceptPrivacyPoilcy():
     try:
-        wait = WebDriverWait(driver, 10)
+        wait = WebDriverWait(driver, 15)
         wait.until(EC.element_to_be_clickable(
             (By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]")))
         driver.find_element(
             By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]").click()
-    except any as e:
+    except:
         driver.save_screenshot('error.png')
-        logging.error("Error while accepting policy: " + str(e))
 
 
 def emailLogin():
@@ -275,6 +274,7 @@ downloadExtention(
     "https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", "UBOL.zip")
 
 # start Chromium
+logging.info("Starting Chrome...")
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
 chromeInstalled: bool = False
@@ -285,23 +285,21 @@ try:
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
 
-except any as e:
-    logging.exception("Chrome/Chromium error: " + str(e))
+except:
+    logging.error("Error occured when launching Chrome")
     chromeInstalled = input(
         "Do you want to try installing Chromium? (Y/n)").lower() != "n"
     if chromeInstalled:
         installChrome()
-        if platform.system() == 'linux' and chromeInstalled:
-            options.binary_location = "./latest/chrome"
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--no-sandbox")
+        if platform.system() == 'Linux' and chromeInstalled:
+            options.binary_location = "latest/chrome"
         service_object = Service(binary_path)
         driver = webdriver.Chrome(service=service_object, options=options)
     else:
         logging.exception("Chrome/Chromium not installed. Exiting...")
         exit()
 
-driver.maximize_window()
+# driver.maximize_window()
 emailLogin()
 
 # Begin scraping
@@ -349,6 +347,7 @@ for animeLink in animeLinks:
         logging.info(unavailable)
     if len(episodes) == 0:
         logging.info("No available episodes!")
+        driver.save_screenshot('error.png')
         break
     else:
         logging.info("Found " + str(len(episodes)) + " episodes")
