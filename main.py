@@ -205,10 +205,10 @@ def emailLogin():
             if driver.current_url != "https://shinden.pl/main/login":
                 break
             logging.critical("Wrong credentials!")
-    except:
+    except any as e:
         driver.save_screenshot('error.png')
         logging.critical(
-            "Something went wrong, please check error.png file or browser window")
+            "Something went wrong, please check error.png file or browser window, error: " + str(e))
 
 
 def virtualDisplay():
