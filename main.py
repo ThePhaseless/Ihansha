@@ -37,11 +37,12 @@ args = parser.parse_args()
 
 envs = dotenv.load_dotenv("./secrets.env")
 if os.getenv("LOGIN") == None or os.getenv("PASSWORD") == None:
-    logging.critical("Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
+    logging.critical(
+        "Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
     exit()
 
-xbfbInstalled = False #set to true if installed with this script
-chromeInstalled = False #set to true if installed with this script
+xbfbInstalled = False  # set to true if installed with this script
+chromeInstalled = False  # set to true if installed with this script
 
 start = 0
 end = 0
@@ -60,7 +61,7 @@ if config['config']['links'] == None:
     linkFile = args.file
 else:
     linkFile = config['config']['links']
-    
+
 if config['config']['silent'] == None:
     silent = args.silent
 else:
@@ -70,11 +71,12 @@ else:
 def downloadExtention(zipLink, filename):
     logging.info("Downloading extention...")
     try:
-        open(filename, "wb").write(requests.get(zipLink, allow_redirects=True).content)
+        open(filename, "wb").write(requests.get(
+            zipLink, allow_redirects=True).content)
     except any as e:
         logging.error("Error while downloading extention: " + str(e))
         logging.error("Using downloaded extention...")
-    
+
 
 class HostingLink:
     def __init__(self, service: str, quality: str, voice: str, subtitles: str, added: str, link: str):
@@ -161,8 +163,10 @@ def installChrome():
             directories = os.system("winget install Hibbiki.Chromium")
             logging.info(directories)
         elif platform.system() == 'Linux':
-            logging.info("Installing via script from https://github.com/scheib/chromium-latest-linux...")
-            directories = os.system("wget -O - https://raw.githubusercontent.com/scheib/chromium-latest-linux/master/update.sh | bash")
+            logging.info(
+                "Installing via script from https://github.com/scheib/chromium-latest-linux...")
+            directories = os.system(
+                "wget -O - https://raw.githubusercontent.com/scheib/chromium-latest-linux/master/update.sh | bash")
             chromeInstalled = True
             logging.info(directories)
         else:
@@ -173,12 +177,18 @@ def installChrome():
         exit()
     logging.info("Chrome/Chromium installed")
 
+
 def acceptPrivacyPoilcy():
     wait = WebDriverWait(driver, 10)
-    wait.until(EC.element_to_be_clickable((By.XPATH, "// span[contains(text(), 'Zaakceptuj wszystko')]"))).click()
-    
+    wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]")))
+    driver.find_element(
+        By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]").click()
+
+
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
+    acceptPrivacyPoilcy()
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
     try:
         # Cookies accept
@@ -197,7 +207,9 @@ def emailLogin():
             logging.critical("Wrong credentials!")
     except:
         driver.save_screenshot('error.png')
-        logging.critical("Something went wrong, please check error.png file or browser window")
+        logging.critical(
+            "Something went wrong, please check error.png file or browser window")
+
 
 def virtualDisplay():
     if platform.system() != 'Windows':
@@ -228,6 +240,7 @@ def virtualDisplay():
         return vdisplay
     return
 
+
 animeLinks = []
 if args.link != None:
     animeLinks += [args.link]
@@ -236,20 +249,20 @@ if args.link != None:
 if linkFile == '' or linkFile == None:
     if args.link == None:
         animeLinks += [input("Enter link to the anime: ")]
-else:
-    if linkFile != '' and linkFile != None:
-        try:
-            f = open(linkFile, "r")
-            for animeLink in f:
-                animeLinks += [animeLink]
-        except:
-            logging.critical("Couldn't open file with links")
-            exit()
+elif linkFile != '' and linkFile != None:
+    try:
+        f = open(linkFile, "r")
+        for animeLink in f:
+            animeLinks += [animeLink]
+    except:
+        logging.critical("Couldn't open file with links")
+        exit()
 
 
 vdisplay = virtualDisplay()
 
-downloadExtention("https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", "UBOL.zip")
+downloadExtention(
+    "https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", "UBOL.zip")
 
 # start Chromium
 options = ChromeOptions()
@@ -264,7 +277,8 @@ try:
 
 except any as e:
     logging.exception("Chrome/Chromium error: " + str(e))
-    chromeInstalled = input("Do you want to try installing Chromium? (Y/n)").lower() != "n"
+    chromeInstalled = input(
+        "Do you want to try installing Chromium? (Y/n)").lower() != "n"
     if chromeInstalled:
         installChrome()
         if platform.system() == 'linux' and chromeInstalled:
@@ -276,9 +290,9 @@ except any as e:
     else:
         logging.exception("Chrome/Chromium not installed. Exiting...")
         exit()
-        
+
 logging.info("Waiting for privacy policy...")
-acceptPrivacyPolicy()
+
 
 logging.info("Singing in...")
 emailLogin()
@@ -290,7 +304,10 @@ for animeLink in animeLinks:
     if "all-episodes" not in showLink:
         showLink = showLink + "/all-episodes"
 
-    driver.get(showLink)
+    try:
+        driver.get(showLink)
+    except:
+        continue
     animeName = driver.find_element(By.CLASS_NAME, "title").text
     WebDriverWait(driver, timeout=5).until(
         lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
@@ -304,7 +321,8 @@ for animeLink in animeLinks:
 
     for episode in episodesRaw:
         listTemp = episode.find_elements(By.XPATH, "./*")
-        temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False, listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"), {})
+        temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False,
+                       listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"), [])
         if listTemp[2].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check":
             temp.online = True
         else:
@@ -344,7 +362,7 @@ for animeLink in animeLinks:
                 continue
             elif episode.num in skipEpisodes:
                 logging.info("Skipping episode " + str(episode.num) +
-                      " because it's already downloaded")
+                             " because it's already downloaded")
                 continue
 
         searchLinks(episode)
@@ -367,7 +385,8 @@ if chromeInstalled:
             logging.info(
                 "You can remove it by typing in cmd: \n winget uninstall Hibbiki.Chromium")
         elif platform.system() == 'Linux':
-            print("You can remove it by typing in terminal: \n ls \n sudo rm -R ./<folder-with-random-numbers>")
+            print(
+                "You can remove it by typing in terminal: \n ls \n sudo rm -R ./<folder-with-random-numbers>")
 
 if xbfbInstalled and platform.system() != 'Windows':
     if input("Do you want to remove Xvfb? (y/N)").lower() == "y":
