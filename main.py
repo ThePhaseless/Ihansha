@@ -369,17 +369,16 @@ if chromeInstalled:
     else:
         if platform.system() == 'Windows':
             logging.info(
-                "You can remove it by typing 'winget uninstall Hibbiki.Chromium' in cmd")
+                "You can remove it by typing in cmd: \n winget uninstall Hibbiki.Chromium")
         elif platform.system() == 'Linux':
-            print("You can remove it by typing: \n sudo apt remove chromium -y \n in terminal")
+            print("You can remove it by typing in terminal: \n ls \n sudo rm -R ./<folder-with-random-numbers>")
 
 if xbfbInstalled and platform.system() != 'Windows':
     if input("Do you want to remove Xvfb? (y/N)").lower() == "y":
         if platform.system() == 'Linux':
             os.system("sudo apt remove xvfb -y")
         else:
-            print("Unsupported OS, please remove manually")
-            exit()
+            logging.info("Unsupported OS, please remove manually")
     else:
         if platform.system() == 'Linux':
-            print("You can remove it by typing 'sudo apt remove xvfb -y' in terminal")
+            print("You can remove it by typing in terminal: \n sudo apt remove xvfb -y")
