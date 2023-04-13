@@ -76,6 +76,7 @@ def downloadExtention(zipLink, filename):
     except any as e:
         logging.error("Error while downloading extention: " + str(e))
         logging.error("Using downloaded extention...")
+    logging.info("Extention downloaded")
 
 
 class HostingLink:
