@@ -12,10 +12,21 @@ from yt_dlp import YoutubeDL
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from chromedriver_py import binary_path
+import configparser
+import logging
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s %(levelname)s %(message)s')
+logging.info('Starting the program...')
+
+config = configparser.ConfigParser()
+config.read('config.ini')
+
 
 parser = argparse.ArgumentParser(
     prog="main.py", description="Download anime from shinden.pl")
-parser.add_argument("-s", "--silent", help="Run without opening a browser (only Linux)", action='store_true')
+parser.add_argument(
+    "-s", "--silent", help="Run without opening a browser (Linux only)", action='store_true')
 parser.add_argument("-l", "--link", help="Link to anime from shinden.pl")
 parser.add_argument("-p", "--path", help="Download path")
 parser.add_argument("-f", "--file", help="File with links to anime")
@@ -25,46 +36,69 @@ args = parser.parse_args()
 
 envs = dotenv.load_dotenv("./secrets.env")
 if os.getenv("LOGIN") == None or os.getenv("PASSWORD") == None:
-    print("Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
+    logging.critical("Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
     exit()
 
 start = 0
 end = 0
 
+dlPath = "./Downloads"
+linkFile = None
+silent = False
+
+if config['config']['path'] == None:
+    if args.path != None:
+        dlPath = args.path
+else:
+    dlPath = config['config']['path']
+
+if config['config']['links'] == None:
+    linkFile = args.file
+else:
+    linkFile = config['config']['links']
+    
+if config['config']['silent'] == None:
+    silent = args.silent
+else:
+    silent = config['config']['silent']
+
 
 def downloadExtention(zipLink):
-    print("Downloading extention...")
+    logging.info("Downloading extention...")
     link = requests.get(zipLink)
     file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
-    open("UBOL.zip", "wb").write(
-        requests.get(zipLink + file + ".mv3.zip", allow_redirects=True).content)
+    try:
+        open("UBOL.zip", "wb").write(
+            requests.get(zipLink + file + ".mv3.zip", allow_redirects=True).content)
+    except Exception as e:
+        logging.error(e)
+        exit()
 
-
-@dataclass
 class HostingLink:
-    service: str
-    quality: str
-    voice: str
-    subtitles: str
-    added: str
-    link: str
+    def __init__(self, service: str, quality: str, voice: str, subtitles: str, added: str, link: str):
+        self.service = service
+        self.quality = quality
+        self.voice = voice
+        self.subtitles = subtitles
+        self.added = added
+        self.link = link
 
 
-@dataclass
 class Episode:
-    num: int
-    title: str
-    online: bool
-    PL: bool
-    watched: bool
-    link: str
-    hostingLinks = []
+    def __init__(self, num: int, title: str, online: bool, PL: bool, watched: bool, link: str, hostingLinks: list):
+        self.num = num
+        self.title = title
+        self.online = online
+        self.PL = PL
+        self.watched = watched
+        self.link = link
+        self.hostingLinks = hostingLinks
 
 
 def searchForFiles(path):
     existingFiles = []
-    tempPath = (args.path or "./Downloads") + "/" + path
+    tempPath = dlPath + "/" + path
     try:
         os.chdir(tempPath)
     except:
@@ -72,14 +106,14 @@ def searchForFiles(path):
     for file in os.listdir():
         if "E" in file and ".mp4" in file and not "part" in file:
             existingFiles += [int(file.replace(".mp4", "").replace("E", ""))]
-    print("Found " + str(len(existingFiles)) + " downloaded episodes")
+    logging.info("Found " + str(len(existingFiles)) + " downloaded episodes")
     return existingFiles
 
 
 def download(num, link):
     link.replace("preview", "view")
     ydl_opts = {
-        'outtmpl': (args.path or './Downloads') + "/" + animeName + '/' 'E' + str(num) + '.mp4'
+        'outtmpl': dlPath + "/" + animeName + '/' 'E' + str(num) + '.mp4'
     }
     with YoutubeDL(ydl_opts) as ydl:
         ydl.download(link)
@@ -100,49 +134,53 @@ def searchLinks(ep: Episode):
                     By.CLASS_NAME, "ep-buttons").find_element(By.TAG_NAME, "a")
                 button.click()
                 try:
-                    print("Waiting for iframe...")
+                    logging.info("Waiting for iframe...")
                     time.sleep(6)
                     dlLink = driver.find_element(By.CLASS_NAME, "player-online").find_element(By.TAG_NAME,
                                                                                               'iframe').get_attribute(
                         "src")
                     if "captcha" in dlLink:
-                        print("Wrong url, trying another mirror...")
+                        logging.error("Wrong url, trying another mirror...")
                         continue
                     break
                 except:
-                    print("Captcha error, trying again")
+                    logging.error("Captcha error, trying again")
                     time.sleep(1)
                     continue
-            # try:
+
             time.sleep(1)
             download(ep.num, dlLink)
             break
-            # except:
-            #   print("Download failed, trying next hosting...")
 
 
 def installChrome():
     try:
         if platform.system() == 'Windows':
-            print("Installing via winget...")
+            logging.info("Installing via winget...")
             directories = os.system("winget install Hibbiki.Chromium")
-            print(directories)
+            logging.info(directories)
         elif platform.system() == 'Linux':
-            print("Installing via apt...")
+            logging.info("Installing via apt...")
             directories = os.system("sudo apt install chromium -y")
-            print(directories)
+            logging.info(directories)
         else:
-            print("Unsupported OS, please install manually")
+            logging.error("Unsupported OS, please install manually")
             exit()
     except:
-        print("Error occured. Please install manually")
+        logging.info("Couldn't install Chromium. Please install manually.")
         exit()
+
+def acceptPrivacyPolicy():
+    wait = WebDriverWait(driver, 10)
+    element = wait.until(EC.element_to_be_clickable((By.ID, 'someid')))
+
+
 
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
     try:
-        #Cookies accept
+        # Cookies accept
         WebDriverWait(driver, timeout=3).until(
             lambda d: d.find_element(By.CLASS_NAME, "cb-enable"))
         driver.find_element(By.CLASS_NAME, "cb-enable").click()
@@ -155,25 +193,35 @@ def emailLogin():
             form.find_element(By.CSS_SELECTOR, '[type="submit"]').click()
             if driver.current_url != "https://shinden.pl/main/login":
                 break
-            print("Wrong credentials")
+            logging.critical("Wrong credentials!")
     except:
         driver.save_screenshot('error.png')
-        print("Something went wrong, please check error.png file or browser window")
+        logging.critical("Something went wrong, please check error.png file or browser window")
 
 
-animeLinks = [args.link]
+animeLinks = []
+if args.link != None:
+    animeLinks += [args.link]
 
-if args.file == None:
+# Get links from file and from user input
+if linkFile == '' or linkFile == None:
     if args.link == None:
         animeLinks += [input("Enter link to the anime: ")]
 else:
-    f = open(args.file, "r")
-    for animeLink in f:
-        animeLinks += [animeLink]
+    if linkFile != '' and linkFile != None:
+        try:
+            f = open(linkFile, "r")
+            for animeLink in f:
+                animeLinks += [animeLink]
+        except:
+            logging.critical("Couldn't open file with links")
+            exit()
 
+
+# Virtual display section
 if platform.system() != 'Windows':
-    if(os.getenv('DISPLAY') == None):
-        if args.silent or input("No display detected. Do you want to start virtual display? (Y/n)").lower() != "n":
+    if (os.getenv('DISPLAY') == None):
+        if silent or input("No display detected. Do you want to start virtual display? (Y/n)").lower() != "n":
             try:
                 from xvfbwrapper import Xvfb
                 print("Starting virtual display")
@@ -196,45 +244,49 @@ if platform.system() != 'Windows':
 downloadExtention(
     "https://github.com/gorhill/uBlock/releases/latest/download/")
 
+# start Chromium
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
 chromeInstalled: bool = False
 try:
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
+    
+    #Shinden requires this for proper work
+    options.add_argument("--lang=pl")
+
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
-    
+
 except:
-    chromeInstalled = input("Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower != "n"
+    chromeInstalled = input(
+        "Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower != "n"
     if chromeInstalled:
-        installChrome();
+        installChrome()
         print("Chrome/Chromium installed")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--no-sandbox")
         service_object = Service(binary_path)
         driver = webdriver.Chrome(service=service_object, options=options)
-        
-driver.maximize_window()
-print("Singing in...")
+
+driver.minimize_window()
+logging.info("Waiting for privacy policy...")
+acceptPrivacyPolicy()
+logging.info("Singing in...")
 emailLogin()
 
-
+# Begin scraping
 for animeLink in animeLinks:
     showLink = animeLink
-    try:
-        if "all-episodes" not in showLink:
-            showLink = showLink + "/all-episodes"
-    except:
-        continue
-    try:
-        driver.get(showLink)
-        animeName = driver.find_element(By.CLASS_NAME, "title").text
-        WebDriverWait(driver, timeout=5).until(
-            lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
-        print(driver.current_url)
-    except:
-        exit()
+
+    if "all-episodes" not in showLink:
+        showLink = showLink + "/all-episodes"
+
+    driver.get(showLink)
+    animeName = driver.find_element(By.CLASS_NAME, "title").text
+    WebDriverWait(driver, timeout=5).until(
+        lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
+    print(driver.current_url)
 
     unavailable = []
     episodes = []
@@ -244,8 +296,7 @@ for animeLink in animeLinks:
 
     for episode in episodesRaw:
         listTemp = episode.find_elements(By.XPATH, "./*")
-        temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False,
-                       listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"))
+        temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False, listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"), {})
         if listTemp[2].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check":
             temp.online = True
         else:
@@ -279,6 +330,7 @@ for animeLink in animeLinks:
 
     episodes.reverse()
     for episode in episodes:
+        # print type of episode
         if args.all:
             if episode.num not in range(int(start), int(end)):
                 continue
@@ -304,11 +356,12 @@ if chromeInstalled:
             exit()
     else:
         if platform.system() == 'Windows':
-            print("You can remove it by typing 'winget uninstall Hibbiki.Chromium' in cmd")
+            print(
+                "You can remove it by typing 'winget uninstall Hibbiki.Chromium' in cmd")
         elif platform.system() == 'Linux':
             print("You can remove it by typing 'sudo apt remove chromium -y' in terminal")
 
-if xbfbInstalled:
+if xbfbInstalled and platform.system() != 'Windows':
     if input("Do you want to remove Xvfb? (y/N)").lower == "y":
         if platform.system() == 'Linux':
             os.system("sudo apt remove xvfb -y")
