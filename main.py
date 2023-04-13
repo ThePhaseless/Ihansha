@@ -225,7 +225,8 @@ def virtualDisplay():
             else:
                 logging.info("Running without virtual display...")
                 return
-    return vdisplay
+        return vdisplay
+    return
 
 animeLinks = []
 if args.link != None:
