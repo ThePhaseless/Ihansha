@@ -189,6 +189,8 @@ def acceptPrivacyPoilcy():
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
     acceptPrivacyPoilcy()
+    logging.log("Policy accepted")
+    logging.info("Logging in...")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
     try:
         # Cookies accept
@@ -291,10 +293,6 @@ except any as e:
         logging.exception("Chrome/Chromium not installed. Exiting...")
         exit()
 
-logging.info("Waiting for privacy policy...")
-
-
-logging.info("Singing in...")
 emailLogin()
 
 # Begin scraping
