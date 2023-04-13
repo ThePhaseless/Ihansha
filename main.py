@@ -67,6 +67,11 @@ if config['config']['silent'] == None:
 else:
     silent = config['config']['silent']
 
+if config['config']['all'] == None:
+    all = args.all
+else:
+    all = config['config']['all']
+
 
 def downloadExtention(zipLink, filename):
     logging.info("Downloading extention...")
