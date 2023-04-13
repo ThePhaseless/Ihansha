@@ -12,6 +12,7 @@ from yt_dlp import YoutubeDL
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service
 from chromedriver_py import binary_path
+from selenium.webdriver.support import expected_conditions as EC
 import configparser
 import logging
 
@@ -68,12 +69,8 @@ def downloadExtention(zipLink):
     link = requests.get(zipLink)
     file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
-    try:
-        open("UBOL.zip", "wb").write(
-            requests.get(zipLink + file + ".mv3.zip", allow_redirects=True).content)
-    except Exception as e:
-        logging.error(e)
-        exit()
+    open("UBOL.zip", "wb").write(
+        requests.get(zipLink + file + ".chromium.mv3.zip", allow_redirects=True).content)
 
 class HostingLink:
     def __init__(self, service: str, quality: str, voice: str, subtitles: str, added: str, link: str):
@@ -173,9 +170,7 @@ def installChrome():
 def acceptPrivacyPolicy():
     wait = WebDriverWait(driver, 10)
     element = wait.until(EC.element_to_be_clickable((By.ID, 'someid')))
-
-
-
+    
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
