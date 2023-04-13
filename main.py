@@ -70,7 +70,7 @@ else:
 def downloadExtention(zipLink, filename):
     logging.info("Downloading extention...")
     try:
-        open(filename+".zip", "wb").write(requests.get(zipLink, allow_redirects=True).content)
+        open(filename, "wb").write(requests.get(zipLink, allow_redirects=True).content)
     except any as e:
         logging.error("Error while downloading extention: " + str(e))
         logging.error("Using downloaded extention...")
