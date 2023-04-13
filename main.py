@@ -173,9 +173,9 @@ def installChrome():
         exit()
     logging.info("Chrome/Chromium installed")
 
-def acceptPrivacyPolicy():
+def acceptPrivacyPoilcy():
     wait = WebDriverWait(driver, 10)
-    wait.until(EC.element_to_be_clickable((By.ID, '')))
+    wait.until(EC.element_to_be_clickable((By.XPATH, "// span[contains(text(), 'Zaakceptuj wszystko')]"))).click()
     
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
@@ -249,12 +249,10 @@ else:
 vdisplay = virtualDisplay()
 
 downloadExtention("https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", "UBOL.zip")
-downloadExtention("https://github.com/FiltersHeroes/PolishCookieConsent/releases/download/v1.45.1/PolishCookieConsent-1.45.1_Chromium.zip", "PZC.zip")
 
 # start Chromium
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
-options.add_extension("./PZC.zip")
 chromeInstalled: bool = False
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--no-sandbox")
