@@ -69,11 +69,8 @@ else:
 
 def downloadExtention(zipLink):
     logging.info("Downloading extention...")
-    link = requests.get(zipLink)
     try:
-        file = link.url.replace(
-        "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
-        open("UBOL.zip", "wb").write(requests.get(zipLink + file + ".chromium.mv3.zip", allow_redirects=True).content)
+        open("UBOL.zip", "wb").write(requests.get("https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", allow_redirects=True).content)
     except any as e:
         logging.error("Error while downloading extention: " + str(e))
         logging.error("Using downloaded extention...")
