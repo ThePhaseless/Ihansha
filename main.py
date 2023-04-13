@@ -180,21 +180,23 @@ def installChrome():
 
 
 def acceptPrivacyPoilcy():
-    wait = WebDriverWait(driver, 10)
-    wait.until(EC.element_to_be_clickable(
-        (By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]")))
-    driver.find_element(
-        By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]").click()
+    try:
+        wait = WebDriverWait(driver, 10)
+        wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]")))
+        driver.find_element(
+            By.XPATH, "/html/body/div[11]/div[1]/div[2]/div/div[2]/button[2]").click()
+    except any as e:
+        driver.save_screenshot('error.png')
+        logging.error("Error while accepting policy: " + str(e))
 
 
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
     logging.info("Accepting policy...")
-    try:
-        acceptPrivacyPoilcy()
-    except any as e:
-        driver.save_screenshot('error.png')
-        logging.error("Error while accepting policy: " + str(e))
+
+    acceptPrivacyPoilcy()
+
     logging.info("Policy accepted")
     logging.info("Logging in...")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
