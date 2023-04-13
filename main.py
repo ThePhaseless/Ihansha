@@ -67,10 +67,10 @@ else:
     silent = config['config']['silent']
 
 
-def downloadExtention(zipLink):
+def downloadExtention(zipLink, filename):
     logging.info("Downloading extention...")
     try:
-        open("UBOL.zip", "wb").write(requests.get("https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", allow_redirects=True).content)
+        open(filename+".zip", "wb").write(requests.get(zipLink, allow_redirects=True).content)
     except any as e:
         logging.error("Error while downloading extention: " + str(e))
         logging.error("Using downloaded extention...")
@@ -175,7 +175,7 @@ def installChrome():
 
 def acceptPrivacyPolicy():
     wait = WebDriverWait(driver, 10)
-    wait.until(EC.element_to_be_clickable((By.ID, 'someid'))).click()
+    wait.until(EC.element_to_be_clickable((By.ID, '')))
     
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
@@ -248,12 +248,13 @@ else:
 
 vdisplay = virtualDisplay()
 
-downloadExtention(
-    "https://github.com/gorhill/uBlock/releases/latest/download/")
+downloadExtention("https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", "UBOL.zip")
+downloadExtention("https://github.com/FiltersHeroes/PolishCookieConsent/releases/download/v1.45.1/PolishCookieConsent-1.45.1_Chromium.zip", "PZC.zip")
 
 # start Chromium
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
+options.add_extension("./PZC.zip")
 chromeInstalled: bool = False
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--no-sandbox")
@@ -276,8 +277,7 @@ except any as e:
     else:
         logging.exception("Chrome/Chromium not installed. Exiting...")
         exit()
-
-driver.minimize_window()
+        
 logging.info("Waiting for privacy policy...")
 acceptPrivacyPolicy()
 
