@@ -40,6 +40,9 @@ if os.getenv("LOGIN") == None or os.getenv("PASSWORD") == None:
     logging.critical("Setup LOGIN and PASSWORD envs in system or in secrets.env file!")
     exit()
 
+xbfbInstalled = False #set to true if installed with this script
+chromeInstalled = False #set to true if installed with this script
+
 start = 0
 end = 0
 
@@ -67,10 +70,14 @@ else:
 def downloadExtention(zipLink):
     logging.info("Downloading extention...")
     link = requests.get(zipLink)
-    file = link.url.replace(
+    try:
+        file = link.url.replace(
         "https://github.com/gorhill/uBlock/releases/download/", "").replace("/", "")
-    open("UBOL.zip", "wb").write(
-        requests.get(zipLink + file + ".chromium.mv3.zip", allow_redirects=True).content)
+        open("UBOL.zip", "wb").write(requests.get(zipLink + file + ".chromium.mv3.zip", allow_redirects=True).content)
+    except any as e:
+        logging.error("Error while downloading extention: " + str(e))
+        logging.error("Using downloaded extention...")
+    
 
 class HostingLink:
     def __init__(self, service: str, quality: str, voice: str, subtitles: str, added: str, link: str):
@@ -157,8 +164,9 @@ def installChrome():
             directories = os.system("winget install Hibbiki.Chromium")
             logging.info(directories)
         elif platform.system() == 'Linux':
-            logging.info("Installing via apt...")
-            directories = os.system("sudo apt install chromium -y")
+            logging.info("Installing via script from https://github.com/scheib/chromium-latest-linux...")
+            directories = os.system("wget -O - https://raw.githubusercontent.com/scheib/chromium-latest-linux/master/update.sh | bash")
+            chromeInstalled = True
             logging.info(directories)
         else:
             logging.error("Unsupported OS, please install manually")
@@ -166,10 +174,11 @@ def installChrome():
     except:
         logging.info("Couldn't install Chromium. Please install manually.")
         exit()
+    logging.info("Chrome/Chromium installed")
 
 def acceptPrivacyPolicy():
     wait = WebDriverWait(driver, 10)
-    element = wait.until(EC.element_to_be_clickable((By.ID, 'someid')))
+    wait.until(EC.element_to_be_clickable((By.ID, 'someid'))).click()
     
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
@@ -193,6 +202,33 @@ def emailLogin():
         driver.save_screenshot('error.png')
         logging.critical("Something went wrong, please check error.png file or browser window")
 
+def virtualDisplay():
+    if platform.system() != 'Windows':
+        if os.getenv('DISPLAY') == None:
+            logging.info("No display detected, starting virtual display...")
+        elif not silent:
+            if input("No display detected. Do you want to start virtual display? (Y/n)").lower() == "n":
+                return
+        try:
+            from xvfbwrapper import Xvfb
+            logging.info("Starting virtual display")
+            vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+            vdisplay.start()
+        except:
+            if input("Couldn't start virtual display. Do you want to install Xvfb? (Y/n)").lower() != "n":
+                global xvfbInstalled
+                xbfbInstalled = True
+                logging.info("Installing via apt...")
+                directories = os.system("sudo apt -y install xvfb")
+                logging.info(directories)
+                from xvfbwrapper import Xvfb
+                logging.info("Starting virtual display")
+                vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
+                vdisplay.start()
+            else:
+                logging.info("Running without virtual display...")
+                return
+    return vdisplay
 
 animeLinks = []
 if args.link != None:
@@ -213,28 +249,7 @@ else:
             exit()
 
 
-# Virtual display section
-if platform.system() != 'Windows':
-    if (os.getenv('DISPLAY') == None):
-        if silent or input("No display detected. Do you want to start virtual display? (Y/n)").lower() != "n":
-            try:
-                from xvfbwrapper import Xvfb
-                print("Starting virtual display")
-                vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
-                vdisplay.start()
-            except:
-                if input("Couldn't start virtual display. Do you want to install Xvfb? (Y/n)").lower() != "n":
-                    global xvfbInstalled
-                    xbfbInstalled = True
-                    print("Installing via apt...")
-                    directories = os.system("sudo apt -y install xvfb")
-                    print(directories)
-                    from xvfbwrapper import Xvfb
-                    print("Starting virtual display")
-                    vdisplay = Xvfb(width=1920, height=1080, colordepth=16)
-                    vdisplay.start()
-                else:
-                    print("Running without virtual display...")
+vdisplay = virtualDisplay()
 
 downloadExtention(
     "https://github.com/gorhill/uBlock/releases/latest/download/")
@@ -243,33 +258,32 @@ downloadExtention(
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
 chromeInstalled: bool = False
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--no-sandbox")
+options.add_argument("--lang=pl")
 try:
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--no-sandbox")
-    
-    #Shinden requires this for proper work
-    options.add_argument("--lang=pl")
-
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
 
-except:
-    chromeInstalled = input(
-        "Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower() != "n"
+except any as e:
+    logging.exception("Chrome/Chromium error: " + str(e))
+    chromeInstalled = input("Do you want to try installing Chromium? (Y/n)").lower() != "n"
     if chromeInstalled:
         installChrome()
-        print("Chrome/Chromium installed")
+        if platform.system() == 'linux' and chromeInstalled:
+            options.binary_location = "./latest/chrome"
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--no-sandbox")
         service_object = Service(binary_path)
         driver = webdriver.Chrome(service=service_object, options=options)
     else:
-        print("Chrome/Chromium not installed. Exiting...")
+        logging.exception("Chrome/Chromium not installed. Exiting...")
         exit()
 
 driver.minimize_window()
 logging.info("Waiting for privacy policy...")
 acceptPrivacyPolicy()
+
 logging.info("Singing in...")
 emailLogin()
 
@@ -284,7 +298,7 @@ for animeLink in animeLinks:
     animeName = driver.find_element(By.CLASS_NAME, "title").text
     WebDriverWait(driver, timeout=5).until(
         lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
-    print(driver.current_url)
+    logging.debug(driver.current_url)
 
     unavailable = []
     episodes = []
@@ -310,15 +324,15 @@ for animeLink in animeLinks:
         episodes += [temp]
 
     if len(unavailable) > 0:
-        print("Episodes not available: ")
-        print(unavailable)
+        logging.info("Episodes not available: ")
+        logging.info(unavailable)
     if len(episodes) == 0:
-        print("No available episodes!")
+        logging.info("No available episodes!")
         break
     else:
-        print("Found " + str(len(episodes)) + " episodes")
+        logging.info("Found " + str(len(episodes)) + " episodes")
         end = len(episodes)
-        print("Searching for links...")
+        logging.info("Searching for links...")
 
     if not args.all:
         start = input("Start episode: ")
@@ -333,34 +347,34 @@ for animeLink in animeLinks:
             if episode.num not in range(int(start), int(end)):
                 continue
             elif episode.num in skipEpisodes:
-                print("Skipping episode " + str(episode.num) +
+                logging.info("Skipping episode " + str(episode.num) +
                       " because it's already downloaded")
                 continue
 
         searchLinks(episode)
 
 driver.quit()
-if platform.system() != 'Windows':
+if vdisplay != None:
     vdisplay.stop()
 
 if chromeInstalled:
-    if input("Do you want to remove Chromium? (y/N)").lower == "y":
+    if input("Do you want to remove Chromium? (y/N)").lower() == "y":
         if platform.system() == 'Windows':
             os.system("winget uninstall Hibbiki.Chromium")
         elif platform.system() == 'Linux':
             os.system("sudo apt remove chromium -y")
         else:
-            print("Unsupported OS, please remove manually")
+            logging.exception("Unsupported OS, please remove manually")
             exit()
     else:
         if platform.system() == 'Windows':
-            print(
+            logging.info(
                 "You can remove it by typing 'winget uninstall Hibbiki.Chromium' in cmd")
         elif platform.system() == 'Linux':
-            print("You can remove it by typing 'sudo apt remove chromium -y' in terminal")
+            print("You can remove it by typing: \n sudo apt remove chromium -y \n in terminal")
 
 if xbfbInstalled and platform.system() != 'Windows':
-    if input("Do you want to remove Xvfb? (y/N)").lower == "y":
+    if input("Do you want to remove Xvfb? (y/N)").lower() == "y":
         if platform.system() == 'Linux':
             os.system("sudo apt remove xvfb -y")
         else:
