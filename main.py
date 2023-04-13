@@ -255,7 +255,7 @@ try:
 
 except:
     chromeInstalled = input(
-        "Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower != "n"
+        "Couldn't open Chrome nor Chromium. This script requires any of these to work. Do you want to install Chromium? (Y/n)").lower() != "n"
     if chromeInstalled:
         installChrome()
         print("Chrome/Chromium installed")
@@ -263,6 +263,9 @@ except:
         options.add_argument("--no-sandbox")
         service_object = Service(binary_path)
         driver = webdriver.Chrome(service=service_object, options=options)
+    else:
+        print("Chrome/Chromium not installed. Exiting...")
+        exit()
 
 driver.minimize_window()
 logging.info("Waiting for privacy policy...")
