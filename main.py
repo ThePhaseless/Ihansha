@@ -293,6 +293,7 @@ except any as e:
         logging.exception("Chrome/Chromium not installed. Exiting...")
         exit()
 
+driver.maximize_window()
 emailLogin()
 
 # Begin scraping
