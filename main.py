@@ -189,7 +189,7 @@ def acceptPrivacyPoilcy():
 
 def emailLogin():
     driver.get("https://shinden.pl/main/login")
-    logging.log("Accepting policy...")
+    logging.info("Accepting policy...")
     try:
         acceptPrivacyPoilcy()
     except any as e:
