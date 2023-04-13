@@ -192,8 +192,9 @@ def emailLogin():
     logging.log("Accepting policy...")
     try:
         acceptPrivacyPoilcy()
-    except:
+    except any as e:
         driver.save_screenshot('error.png')
+        logging.error("Error while accepting policy: " + str(e))
     logging.info("Policy accepted")
     logging.info("Logging in...")
     form = driver.find_element(By.CLASS_NAME, 'l-main-contantainer')
