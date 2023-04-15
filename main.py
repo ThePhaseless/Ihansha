@@ -367,13 +367,12 @@ for animeLink in animeLinks:
 
     episodes.reverse()
     for episode in episodes:
+        if episode.num in skipEpisodes:
+            logging.info("Skipping episode " + str(episode.num) +
+                         " because it's already downloaded")
         # print type of episode
-        if not all:
+        elif not all:
             if episode.num not in range(start, end+1):
-                continue
-            elif episode.num in skipEpisodes:
-                logging.info("Skipping episode " + str(episode.num) +
-                             " because it's already downloaded")
                 continue
 
         searchLinks(episode)
