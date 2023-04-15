@@ -47,7 +47,8 @@ start = 0
 end = 0
 
 linkFile = None
-silent = False
+silent: bool = False
+all: bool = False
 
 if config['config']['path'] == None:
     if args.path != None:
@@ -63,12 +64,9 @@ else:
 if config['config']['silent'] == None:
     silent = args.silent
 else:
-    silent = config['config']['silent']
+    silent = config.getboolean('config', 'silent')
 
-if config['config']['all'] == None:
-    all = args.all
-else:
-    all = config['config']['all']
+all = args.all
 
 
 def downloadExtention(zipLink, filename):
@@ -361,17 +359,17 @@ for animeLink in animeLinks:
         end = len(episodes)
         logging.info("Searching for links...")
 
-    if not args.all:
-        start = input("Start episode: ")
-        end = input("End episode: ")
+    if not all:
+        start: int = int(input("Start episode: "))
+        end: int = int(input("End episode: "))
 
     skipEpisodes = searchForFiles(animeName)
 
     episodes.reverse()
     for episode in episodes:
         # print type of episode
-        if args.all:
-            if episode.num not in range(int(start), int(end)):
+        if not all:
+            if episode.num not in range(start, end+1):
                 continue
             elif episode.num in skipEpisodes:
                 logging.info("Skipping episode " + str(episode.num) +
