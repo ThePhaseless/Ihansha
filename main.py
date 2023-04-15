@@ -278,8 +278,8 @@ downloadExtention(
 
 # start Chromium
 
-if (not os.path.exists(./chromium)) and  :
-    logging.exception("Install correct chromedriver as ./chromedriver)
+if (not os.path.exists("./chromium")) and platform.system() == 'Linux':
+    logging.exception("Install correct chromedriver as ./chromedriver")
 logging.info("Starting Chrome...")
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
@@ -287,8 +287,8 @@ chromeInstalled: bool = False
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--no-sandbox")
 options.add_argument("--lang=pl")
+binary_path = "./chromedriver"
 try:
-    binary_path="./chromedriver"
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
 
@@ -332,7 +332,7 @@ for animeLink in animeLinks:
 
     for episode in episodesRaw:
         listTemp = episode.find_elements(By.XPATH, "./*")
-        #Episode(num: int, title: str, online: bool, PL: bool, watched: bool, link: str, hostingLinks: list)
+        # Episode(num: int, title: str, online: bool, PL: bool, watched: bool, link: str, hostingLinks: list)
         temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False,
                        listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"), [])
         if listTemp[2].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check":
