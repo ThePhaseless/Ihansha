@@ -11,7 +11,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from yt_dlp import YoutubeDL
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.chrome.service import Service
-from chromedriver_py import binary_path
 from selenium.webdriver.support import expected_conditions as EC
 import configparser
 import logging
@@ -47,7 +46,6 @@ chromeInstalled = False  # set to true if installed with this script
 start = 0
 end = 0
 
-dlPath = "./Downloads"
 linkFile = None
 silent = False
 
@@ -279,6 +277,9 @@ downloadExtention(
     "https://github.com/gorhill/uBlock/releases/download/uBOLite_0.1.23.4076/uBOLite_0.1.23.4076.chromium.mv3.zip", "UBOL.zip")
 
 # start Chromium
+
+if (not os.path.exists(./chromium)) and  :
+    logging.exception("Install correct chromedriver as ./chromedriver)
 logging.info("Starting Chrome...")
 options = ChromeOptions()
 options.add_extension("./UBOL.zip")
@@ -287,6 +288,7 @@ options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--no-sandbox")
 options.add_argument("--lang=pl")
 try:
+    binary_path="./chromedriver"
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object, options=options)
 
@@ -296,8 +298,6 @@ except:
         "Do you want to try installing Chromium? (Y/n)").lower() != "n"
     if chromeInstalled:
         installChrome()
-        if platform.system() == 'Linux' and chromeInstalled:
-            options.binary_location = "latest/chrome"
         service_object = Service(binary_path)
         driver = webdriver.Chrome(service=service_object, options=options)
     else:
@@ -308,6 +308,7 @@ except:
 emailLogin()
 
 # Begin scraping
+# For each link
 for animeLink in animeLinks:
     showLink = animeLink
 
@@ -316,8 +317,8 @@ for animeLink in animeLinks:
 
     try:
         driver.get(showLink)
-    except:
-        continue
+    except any as e:
+        logging.info("Error occured:" + str(e) + "\n\nbut continuing...")
     animeName = driver.find_element(By.CLASS_NAME, "title").text
     WebDriverWait(driver, timeout=5).until(
         lambda d: d.find_element(By.CLASS_NAME, "list-episode-checkboxes"))
@@ -331,6 +332,7 @@ for animeLink in animeLinks:
 
     for episode in episodesRaw:
         listTemp = episode.find_elements(By.XPATH, "./*")
+        #Episode(num: int, title: str, online: bool, PL: bool, watched: bool, link: str, hostingLinks: list)
         temp = Episode(int(listTemp[0].text), str(listTemp[1]), False, False, False,
                        listTemp[5].find_element(By.TAG_NAME, "a").get_attribute("href"), [])
         if listTemp[2].find_element(By.TAG_NAME, "i").get_attribute("class") == "fa fa-fw fa-check":
