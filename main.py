@@ -370,11 +370,13 @@ for animeLink in animeLinks:
         if episode.num in skipEpisodes:
             logging.info("Skipping episode " + str(episode.num) +
                          " because it's already downloaded")
+            continue
         # print type of episode
         elif not all:
             if episode.num not in range(start, end+1):
                 continue
 
+        logging.info("Searching for episode " + str(episode.num) + "...")
         searchLinks(episode)
 
 driver.quit()
