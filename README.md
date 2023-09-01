@@ -1,5 +1,8 @@
 # Shinden Anime Scrapper
 
+## Deprecated
+This project is no longer maintained. Please use refreshed version [here](https://github.com/ThePhaseless/ShindenDockerized)
+
 How to use? 
 ```
 pip install -r requirements.txt
